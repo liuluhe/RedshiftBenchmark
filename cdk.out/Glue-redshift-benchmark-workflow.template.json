@@ -1,0 +1,615 @@
+{
+  "Resources": {
+    "GlueJobRoleDemo41402B6E": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "glue.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/Glue-Job-Role-Demo/Resource"
+      }
+    },
+    "GlueJobRoleDemoDefaultPolicyDE6F2BF0": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "logs:*",
+                "s3:*",
+                "ec2:*",
+                "iam:*",
+                "cloudwatch:*",
+                "dynamodb:*",
+                "glue:*",
+                "redshift:*",
+                "redshift-data:*"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "PolicyName": "GlueJobRoleDemoDefaultPolicyDE6F2BF0",
+        "Roles": [
+          {
+            "Ref": "GlueJobRoleDemo41402B6E"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/Glue-Job-Role-Demo/DefaultPolicy/Resource"
+      }
+    },
+    "tpcdsbenchmarkcreatetables": {
+      "Type": "AWS::Glue::Job",
+      "Properties": {
+        "Command": {
+          "Name": "pythonshell",
+          "PythonVersion": "3",
+          "ScriptLocation": {
+            "Fn::Join": [
+              "",
+              [
+                "s3://",
+                {
+                  "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+                },
+                "/glue_script/submit_redshift_sql.py"
+              ]
+            ]
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "GlueJobRoleDemo41402B6E",
+            "Arn"
+          ]
+        },
+        "DefaultArguments": {
+          "--dbname": "benchmark",
+          "--username": "admin",
+          "--password": "Adim1234",
+          "--host": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B"
+          },
+          "--port": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2"
+          },
+          "--sql_script_bucket": {
+            "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+          },
+          "--sql_script_key": "redshift_script/01-create-tables.sql",
+          "--tpcds_root_path": "NA",
+          "--role_arn": "NA"
+        },
+        "MaxCapacity": 0.0625,
+        "Name": "tpcds-benchmark-create-tables",
+        "Tags": {
+          "project": "redshift-benchmark"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/tpcds-benchmark-create-tables"
+      }
+    },
+    "tpcdsbenchmarkloadtables": {
+      "Type": "AWS::Glue::Job",
+      "Properties": {
+        "Command": {
+          "Name": "pythonshell",
+          "PythonVersion": "3",
+          "ScriptLocation": {
+            "Fn::Join": [
+              "",
+              [
+                "s3://",
+                {
+                  "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+                },
+                "/glue_script/submit_redshift_sql.py"
+              ]
+            ]
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "GlueJobRoleDemo41402B6E",
+            "Arn"
+          ]
+        },
+        "DefaultArguments": {
+          "--dbname": "benchmark",
+          "--username": "admin",
+          "--password": "Adim1234",
+          "--host": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B"
+          },
+          "--port": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2"
+          },
+          "--sql_script_bucket": {
+            "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+          },
+          "--sql_script_key": "redshift_script/02-load-tables.sql",
+          "--tpcds_root_path": "s3://redshift-downloads/TPC-DS/2.13/3TB/",
+          "--role_arn": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftClusterRole4D302097ArnD11E3EAB"
+          }
+        },
+        "MaxCapacity": 0.0625,
+        "Name": "tpcds-benchmark-load-tables",
+        "Tags": {
+          "project": "redshift-benchmark"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/tpcds-benchmark-load-tables"
+      }
+    },
+    "tpcdsbenchmarksequentialreport": {
+      "Type": "AWS::Glue::Job",
+      "Properties": {
+        "Command": {
+          "Name": "pythonshell",
+          "PythonVersion": "3",
+          "ScriptLocation": {
+            "Fn::Join": [
+              "",
+              [
+                "s3://",
+                {
+                  "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+                },
+                "/glue_script/run_redshift_benchmark.py"
+              ]
+            ]
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "GlueJobRoleDemo41402B6E",
+            "Arn"
+          ]
+        },
+        "DefaultArguments": {
+          "--dbname": "benchmark",
+          "--username": "admin",
+          "--password": "Adim1234",
+          "--host": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B"
+          },
+          "--port": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2"
+          },
+          "--mode": "sequential",
+          "--sql_script_bucket": {
+            "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+          },
+          "--sql_script_key": "redshift_script/tpcds_queries/",
+          "--num_runs": 1,
+          "--parallel_level": 10
+        },
+        "MaxCapacity": 0.0625,
+        "Name": "tpcds-benchmark-sequential-report",
+        "Tags": {
+          "project": "redshift-benchmark"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/tpcds-benchmark-sequential-report"
+      }
+    },
+    "tpcdsbenchmarkconcurrentreport": {
+      "Type": "AWS::Glue::Job",
+      "Properties": {
+        "Command": {
+          "Name": "pythonshell",
+          "PythonVersion": "3",
+          "ScriptLocation": {
+            "Fn::Join": [
+              "",
+              [
+                "s3://",
+                {
+                  "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+                },
+                "/glue_script/run_redshift_benchmark.py"
+              ]
+            ]
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "GlueJobRoleDemo41402B6E",
+            "Arn"
+          ]
+        },
+        "DefaultArguments": {
+          "--dbname": "benchmark",
+          "--username": "admin",
+          "--password": "Adim1234",
+          "--host": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B"
+          },
+          "--port": {
+            "Fn::ImportValue": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2"
+          },
+          "--mode": "concurrent",
+          "--sql_script_bucket": {
+            "Fn::ImportValue": "repository:ExportsOutputRefS3AssetEA84DA40D5C25B7E"
+          },
+          "--sql_script_key": "redshift_script/tpcds_queries/",
+          "--num_runs": 1,
+          "--parallel_level": 10
+        },
+        "MaxCapacity": 0.0625,
+        "Name": "tpcds-benchmark-concurrent-report",
+        "Tags": {
+          "project": "redshift-benchmark"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/tpcds-benchmark-concurrent-report"
+      }
+    },
+    "redshiftbenchmarkpipeline": {
+      "Type": "AWS::Glue::Workflow",
+      "Properties": {
+        "Description": "Use TPCDS benchmark Redshift",
+        "Name": "redshift-benchmark",
+        "Tags": {
+          "project": "redshift-benchmark"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/redshift-benchmark-pipeline"
+      }
+    },
+    "starttrigger": {
+      "Type": "AWS::Glue::Trigger",
+      "Properties": {
+        "Actions": [
+          {
+            "JobName": "tpcds-benchmark-create-tables"
+          }
+        ],
+        "Type": "ON_DEMAND",
+        "Description": "Start the benchmark process",
+        "Name": "start-redshift-benchmark",
+        "Tags": {
+          "project": "redshift-benchmark"
+        },
+        "WorkflowName": "redshift-benchmark"
+      },
+      "DependsOn": [
+        "tpcdsbenchmarkcreatetables"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/start-trigger"
+      }
+    },
+    "loadtrigger": {
+      "Type": "AWS::Glue::Trigger",
+      "Properties": {
+        "Actions": [
+          {
+            "JobName": "tpcds-benchmark-load-tables"
+          }
+        ],
+        "Type": "CONDITIONAL",
+        "Description": "Copy data to Redshift table from S3",
+        "Name": "load-trigger",
+        "Predicate": {
+          "Conditions": [
+            {
+              "JobName": "tpcds-benchmark-create-tables",
+              "LogicalOperator": "EQUALS",
+              "State": "SUCCEEDED"
+            }
+          ],
+          "Logical": "ANY"
+        },
+        "StartOnCreation": true,
+        "Tags": {
+          "project": "redshift-benchmark"
+        },
+        "WorkflowName": "redshift-benchmark"
+      },
+      "DependsOn": [
+        "tpcdsbenchmarkcreatetables",
+        "tpcdsbenchmarkloadtables"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/load-trigger"
+      }
+    },
+    "sequentialtrigger": {
+      "Type": "AWS::Glue::Trigger",
+      "Properties": {
+        "Actions": [
+          {
+            "JobName": "tpcds-benchmark-sequential-report"
+          }
+        ],
+        "Type": "CONDITIONAL",
+        "Description": "Perform sequantial run of queries",
+        "Name": "sequential-trigger",
+        "Predicate": {
+          "Conditions": [
+            {
+              "JobName": "tpcds-benchmark-load-tables",
+              "LogicalOperator": "EQUALS",
+              "State": "SUCCEEDED"
+            }
+          ],
+          "Logical": "ANY"
+        },
+        "StartOnCreation": true,
+        "Tags": {
+          "project": "redshift-benchmark"
+        },
+        "WorkflowName": "redshift-benchmark"
+      },
+      "DependsOn": [
+        "tpcdsbenchmarkloadtables",
+        "tpcdsbenchmarksequentialreport"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/sequential-trigger"
+      }
+    },
+    "concurrenttrigger": {
+      "Type": "AWS::Glue::Trigger",
+      "Properties": {
+        "Actions": [
+          {
+            "JobName": "tpcds-benchmark-concurrent-report"
+          }
+        ],
+        "Type": "CONDITIONAL",
+        "Description": "Perform concurrent run of queries",
+        "Name": "concurrent-trigger",
+        "Predicate": {
+          "Conditions": [
+            {
+              "JobName": "tpcds-benchmark-sequential-report",
+              "LogicalOperator": "EQUALS",
+              "State": "SUCCEEDED"
+            }
+          ],
+          "Logical": "ANY"
+        },
+        "StartOnCreation": true,
+        "Tags": {
+          "project": "redshift-benchmark"
+        },
+        "WorkflowName": "redshift-benchmark"
+      },
+      "DependsOn": [
+        "tpcdsbenchmarkconcurrentreport",
+        "tpcdsbenchmarksequentialreport"
+      ],
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/concurrent-trigger"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/yWMwQqDMBBEv8V7XKul0N4K3noSW+jZxmi3xixsEkRC/r1GT/NmhpkSyuoCp+zeLTaX/VQESawgPF0nJ1GTsY69dKIeTKsseZYq8Vb06JBMFGkYsJshtKT3cteGNMo12YOiGLXfjrfgQZ+Uv4mnQdOS+MU4jopjjKJZ3ZdMcYYr3LKfRczZG4ezgvbQP3WMCjKzAAAA"
+      },
+      "Metadata": {
+        "aws:cdk:path": "Glue-redshift-benchmark-workflow/CDKMetadata/Default"
+      },
+      "Condition": "CDKMetadataAvailable"
+    }
+  },
+  "Conditions": {
+    "CDKMetadataAvailable": {
+      "Fn::Or": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "af-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ca-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-northwest-1"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-3"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "me-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "sa-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-2"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

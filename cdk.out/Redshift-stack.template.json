@@ -1,0 +1,380 @@
+{
+  "Resources": {
+    "redshiftClusterRole4D302097": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "redshift.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":iam::aws:policy/AmazonS3ReadOnlyAccess"
+              ]
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "Redshift-stack/redshiftClusterRole/Resource"
+      }
+    },
+    "redshiftDemoClusterSubnetGroup": {
+      "Type": "AWS::Redshift::ClusterSubnetGroup",
+      "Properties": {
+        "Description": "Redshift Demo Cluster Subnet Group",
+        "SubnetIds": [
+          {
+            "Fn::ImportValue": "vpc-stack:ExportsOutputRefVPCPublicSubnet1SubnetB4246D30D84F935B"
+          },
+          {
+            "Fn::ImportValue": "vpc-stack:ExportsOutputRefVPCPublicSubnet2Subnet74179F3969CC10AD"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "Redshift-stack/redshiftDemoClusterSubnetGroup"
+      }
+    },
+    "redshiftSecurityGroup1299C9E9": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security Group for Redshift",
+        "GroupName": "redshift_sg",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Allow all outbound traffic by default",
+            "IpProtocol": "-1"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "Description": "Public login access",
+            "FromPort": 5439,
+            "IpProtocol": "tcp",
+            "ToPort": 5439
+          }
+        ],
+        "VpcId": {
+          "Fn::ImportValue": "vpc-stack:ExportsOutputRefVPCB9E5F0B4BD23A326"
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "Redshift-stack/redshiftSecurityGroup/Resource"
+      }
+    },
+    "redshiftDemoCluster": {
+      "Type": "AWS::Redshift::Cluster",
+      "Properties": {
+        "ClusterType": "single-node",
+        "DBName": "benchmark",
+        "MasterUsername": "admin",
+        "MasterUserPassword": "Adim1234",
+        "NodeType": "dc2.large",
+        "ClusterIdentifier": "redshift-stack",
+        "ClusterSubnetGroupName": {
+          "Ref": "redshiftDemoClusterSubnetGroup"
+        },
+        "IamRoles": [
+          {
+            "Fn::GetAtt": [
+              "redshiftClusterRole4D302097",
+              "Arn"
+            ]
+          }
+        ],
+        "Port": 5439,
+        "PubliclyAccessible": true,
+        "VpcSecurityGroupIds": [
+          {
+            "Fn::GetAtt": [
+              "redshiftSecurityGroup1299C9E9",
+              "GroupId"
+            ]
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "Redshift-stack/redshiftDemoCluster"
+      }
+    },
+    "CDKMetadata": {
+      "Type": "AWS::CDK::Metadata",
+      "Properties": {
+        "Analytics": "v2:deflate64:H4sIAAAAAAAA/1WNQQrCMBBFz9J9OrUVQXeCC5dKe4KajjS2TcpkBikhd7dRUFz94b3h/xLKageb7Ng+fa67oQjaEUJouNWDOt3tRXgWVidnPZNoTqxG74Q0pnsVnWHjbFSpIph2glC78S1TRkXY+d7cGUL6H8UzUiM3i3wmJ7P60ahQV+s4aiHDy1f/gRijui7cO1tsYQ+H7OGNyUksmwmh/uQLXuYAv9gAAAA="
+      },
+      "Metadata": {
+        "aws:cdk:path": "Redshift-stack/CDKMetadata/Default"
+      },
+      "Condition": "CDKMetadataAvailable"
+    }
+  },
+  "Outputs": {
+    "RedshiftCluster": {
+      "Description": "RedshiftCluster Endpoint",
+      "Value": {
+        "Fn::GetAtt": [
+          "redshiftDemoCluster",
+          "Endpoint.Address"
+        ]
+      }
+    },
+    "RedshiftClusterId": {
+      "Description": "Redshift Cluster id",
+      "Value": "redshift-stack"
+    },
+    "RedshiftIAMRole": {
+      "Description": "Redshift Cluster IAM Role Arn",
+      "Value": {
+        "Fn::GetAtt": [
+          "redshiftClusterRole4D302097",
+          "Arn"
+        ]
+      }
+    },
+    "ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B": {
+      "Value": {
+        "Fn::GetAtt": [
+          "redshiftDemoCluster",
+          "Endpoint.Address"
+        ]
+      },
+      "Export": {
+        "Name": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointAddressF80BAA9B"
+      }
+    },
+    "ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2": {
+      "Value": {
+        "Fn::GetAtt": [
+          "redshiftDemoCluster",
+          "Endpoint.Port"
+        ]
+      },
+      "Export": {
+        "Name": "Redshift-stack:ExportsOutputFnGetAttredshiftDemoClusterEndpointPortA9A44DD2"
+      }
+    },
+    "ExportsOutputFnGetAttredshiftClusterRole4D302097ArnD11E3EAB": {
+      "Value": {
+        "Fn::GetAtt": [
+          "redshiftClusterRole4D302097",
+          "Arn"
+        ]
+      },
+      "Export": {
+        "Name": "Redshift-stack:ExportsOutputFnGetAttredshiftClusterRole4D302097ArnD11E3EAB"
+      }
+    }
+  },
+  "Conditions": {
+    "CDKMetadataAvailable": {
+      "Fn::Or": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "af-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-northeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ap-southeast-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "ca-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "cn-northwest-1"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-central-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-north-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-2"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "eu-west-3"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "me-south-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "sa-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-east-2"
+              ]
+            }
+          ]
+        },
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-1"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                {
+                  "Ref": "AWS::Region"
+                },
+                "us-west-2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
