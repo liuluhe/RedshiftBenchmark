@@ -18,11 +18,12 @@ app = core.App()
 # Could change to cloudformation parameter by core.CfnParameter(app,"Pass-in-parameters",)
 rs_instance_type = "dc2.large"
 rs_node_count = 1
-rs_username = "admin"
+rs_username = "awsuser"
 rs_password = "Adim1234"
 tpcds_data_path = 's3://redshift-downloads/TPC-DS/2.13/3TB/'
 parallel_level = 10
 num_runs = 1
+num_files = 10
 
 
 #################### Upload scripts to S3 that could be inferred by following tasks ######################
@@ -48,6 +49,7 @@ benchmark_workflow = RedshiftBenchmarkStack(app,"Glue-redshift-benchmark-workflo
     ,tpcds_root_path=tpcds_data_path
     ,parallel_level=parallel_level
     ,num_runs=num_runs
+    ,num_files=num_files
     )
    
 app.synth()

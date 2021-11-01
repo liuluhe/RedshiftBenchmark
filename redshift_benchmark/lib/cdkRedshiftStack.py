@@ -71,7 +71,7 @@ class RedshiftStack(core.Stack):
                 "redshiftDemoCluster",
                 cluster_type=cluster_type,
                 cluster_identifier = "redshift-stack",
-                db_name="benchmark",
+                db_name="dev",
                 master_username = master_user,
                 number_of_nodes = node_num,
                 port=5439,

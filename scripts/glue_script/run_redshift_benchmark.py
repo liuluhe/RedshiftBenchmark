@@ -81,11 +81,11 @@ class RS_Benchmark_Operator(object):
 
              # Record the result to dataframe and log 
              # columns=['query','round','testType','startTime','endTime','elapseSeconds']
-             self.result_summary.append(pd.Series([self.test_name,path,runs,type,startTime,endTime,costTime],index=['testName','query','round','testType','startTime','endTime','elapseSeconds']),ignore_index=True)
+             self.result_summary=self.result_summary.append(pd.Series([self.test_name,path,runs,type,startTime,endTime,costTime],index=['testName','query','round','testType','startTime','endTime','elapseSeconds']),ignore_index=True)
              self.root.info('QUERY SUCCESS: script %s success and take %s seconds.'%(path,costTime))
          except Exception as e:
              self.root.error('ERROR: execute  {0} causes error'.format(path))
-             raise e
+             self.result_summary=self.result_summary.append(pd.Series([self.test_name,path,runs,type,'error','error',0.0],index=['testName','query','round','testType','startTime','endTime','elapseSeconds']),ignore_index=True)
          finally:
              cursor.close()
              conn.close()
@@ -93,6 +93,8 @@ class RS_Benchmark_Operator(object):
     def close_pool(self):
         if self._pool != None:
             self._pool.close()
+    def get_name(self):
+        return self.test_name
 
     def get_result(self):
         self.root.info('Final result: \n %s'%self.result_summary.to_string())
@@ -111,7 +113,7 @@ class RS_Benchmark_Operator(object):
                 queryFile = open(queryPath,'r')
                 querySQL = queryFile.read()
                 # Thread run sql
-                t = threading.Thread(target=self.rs_select,args=(querySQL,queryPath,'Concurrent',i))
+                t = threading.Thread(target=self.rs_select,args=(querySQL,queryPath,'concurrent',i))
                 q.put(t)
                 if q.full() == True:
                     thread_list = []
@@ -121,7 +123,10 @@ class RS_Benchmark_Operator(object):
                         t.start()
                     for t in thread_list:
                         t.join()
-            self.root.info("ROUND SUCCESS: %s round concurrent test and took %s seconds in total"%(i, round(time.time() - st, 3)))
+            et=time.time()
+            tt=round(et - st, 3)
+            self.root.info("ROUND SUCCESS: %s round concurrent test and took %s seconds in total"%(i, tt))
+            self.result_summary=self.result_summary.append(pd.Series([self.test_name,'total',i,'concurrent',st,et,tt],index=['testName','query','round','testType','startTime','endTime','elapseSeconds']),ignore_index=True)
     
 
     
@@ -137,8 +142,12 @@ class RS_Benchmark_Operator(object):
                 queryFile = open(queryPath,'r')
                 querySQL = queryFile.read()
                 # Thread run sql
-                self.rs_select(querySQL,queryPath,'Sequential',i)
-            self.root.info("ROUND SUCCESS: %s round sequential test and took %s seconds in total"%(i, round(time.time() - st, 3)))
+                self.rs_select(querySQL,queryPath,'sequential',i)
+            et=time.time()
+            tt=round(et - st, 3)
+            self.root.info("ROUND SUCCESS: %s round concurrent test and took %s seconds in total"%(i, tt))
+            self.result_summary=self.result_summary.append(pd.Series([self.test_name,'total',i,'sequential',st,et,tt],index=['testName','query','round','testType','startTime','endTime','elapseSeconds']),ignore_index=True)
+    
 
 if __name__ == '__main__':
     #logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',level=logging.DEBUG)
@@ -152,7 +161,7 @@ if __name__ == '__main__':
     result_cache='off'
     num_runs=None
     # query path without number. My example path is /home/ec2-user/environment/python_project/rs_sql_file/query10.sql
-    sql_file_path = '/home/ec2-user/environment/python_project/rs_sql_file/query' 
+    sql_file_path = 'redshift_script/tpcds_queries' 
     mode = 'sequential'
     parallel_level = 10 # number of queries runs in parallel during concurrent query task 
     ############################# Use pass-in parameter #######################################################################
@@ -165,7 +174,8 @@ if __name__ == '__main__':
                                     'sql_script_bucket',
                                     'sql_script_key',
                                     'num_runs',
-                                    'parallel_level'])
+                                    'parallel_level',
+                                    'num_files'])
     host=args['host']
     user=args['username']
     password=args['password']
@@ -176,6 +186,7 @@ if __name__ == '__main__':
     sql_script_key=args['sql_script_key']
     num_runs=int(args['num_runs'])
     parallel_level=int(args['parallel_level'])
+    num_files=int(args['num_files'])
 
     # Download SQL files from S3 to local and store in local path same as S3 path
     import boto3
@@ -233,7 +244,7 @@ if __name__ == '__main__':
             print("[*] sql files path is ",sql_file_path)
     ###########################################################################################
     """   
-    db=RS_Benchmark_Operator(host,user,password,sql_file_path,port,dbname,num_runs=num_runs,parallel_level=parallel_level)
+    db=RS_Benchmark_Operator(host,user,password,sql_file_path,port,dbname,num_runs=num_runs,parallel_level=parallel_level,num_sql_files=num_files)
 
     if mode =='concurrent':
         # Start concurrent query task
@@ -246,4 +257,5 @@ if __name__ == '__main__':
     
     db.close_pool()
 
-    db.get_result().to_csv('s3://'+sql_script_bucket+'/report/', index=False)
+    db.get_result().to_csv(sql_file_path+db.get_name(), index=False)
+    bucket.upload_file(sql_file_path+db.get_name(), 'report/'+db.get_name())

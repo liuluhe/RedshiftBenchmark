@@ -18,6 +18,7 @@ class RedshiftBenchmarkStack(core.Stack):
         ,tpcds_root_path:str # root path for tpcds for example s3://redshift-downloads/TPC-DS/2.13/3TB/
         ,rs_role_arn:str
         ,num_runs:int
+        ,num_files:int
         ,parallel_level:int
         ,**kwargs) -> None:
         super().__init__(scope, id, **kwargs)
@@ -45,6 +46,7 @@ class RedshiftBenchmarkStack(core.Stack):
         self.port=port
         self.num_runs=num_runs
         self.parallel_level=parallel_level
+        self.num_files=num_files
         
         ############################### Create Glue jobs#############################################
         ddl_task = self.rs_sql_task("tpcds-benchmark-create-tables", "01-create-tables.sql")
@@ -160,7 +162,9 @@ class RedshiftBenchmarkStack(core.Stack):
                  '--sql_script_bucket': self.s3_bucket,
                  '--sql_script_key':'redshift_script/tpcds_queries/',
                  '--num_runs':self.num_runs,
-                 '--parallel_level':self.parallel_level},
+                 '--num_files':self.num_files,
+                 '--parallel_level':self.parallel_level,
+                 '--extra-py-files':'s3://'+self.s3_bucket+'/glue_script/DBUtils-2.0.2-py3-none-any.whl,s3://'+self.s3_bucket+'/glue_script/psycopg2-2.9.1-cp36-cp36m-linux_x86_64.whl'},
             tags={"project":"redshift-benchmark"},
             command=glue.CfnJob.JobCommandProperty(
                 name="pythonshell",
@@ -184,10 +188,8 @@ class RedshiftBenchmarkStack(core.Stack):
                  '--password': self.password,
                  '--host': self.host,
                  '--port': self.port,
-                 #'--cluster_id':self.cluster_id,
                  '--sql_script_bucket': self.s3_bucket,
                  '--sql_script_key':'redshift_script/'+sql_file, # Only difference for Redshift SQL task
-                 #'--extra-py-files':"s3://"+self.s3_bucket+"/boto3-depends.zip"
                  '--tpcds_root_path':'NA',
                  '--role_arn':'NA'
                  },
@@ -211,12 +213,10 @@ class RedshiftBenchmarkStack(core.Stack):
                  '--password': self.password,
                  '--host': self.host,
                  '--port': self.port,
-                 #'--cluster_id':self.cluster_id,
                  '--sql_script_bucket': self.s3_bucket,
                  '--sql_script_key':'redshift_script/'+sql_file, # Only difference for Redshift SQL task
                  '--tpcds_root_path':parameters['tpcds_root_path'],
                  '--role_arn':parameters['role_arn']
-                 #'--extra-py-files':"s3://"+self.s3_bucket+"/boto3-depends.zip",
                  },
                 tags={"project":"redshift-benchmark"},
                 command=glue.CfnJob.JobCommandProperty(
