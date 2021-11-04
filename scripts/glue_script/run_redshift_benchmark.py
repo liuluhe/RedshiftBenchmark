@@ -64,7 +64,8 @@ class RS_Benchmark_Operator(object):
             self._pool=pool
             self.root.info('SUCCESS: create postgresql connection pool success.\n')
         except Exception as e:
-            self.root.error('ERROR: create postgresql pool failed：{0}\n')
+            self.root.error('ERROR: create postgresql pool failed：%s\n'%e)
+            raise e
     def rs_select(self, sql, path,type,runs):
          # 执行查询
          try:

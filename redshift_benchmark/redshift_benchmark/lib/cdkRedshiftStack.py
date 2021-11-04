@@ -1,3 +1,16 @@
+"""
+   Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ 
+   Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance
+   with the License. A copy of the License is located at
+ 
+       http://www.apache.org/licenses/LICENSE-2.0
+ 
+   or in the 'license' file accompanying this file. This file is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES
+   OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
+   and limitations under the License.
+ """
+
 from aws_cdk import aws_redshift as redshift
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
@@ -12,13 +25,17 @@ class RedshiftStack(core.Stack):
         self,
         scope: core.Construct, id: str,
         vpc,
-        ec2_instance_type: str,
-        master_user: str,
-        password:str,
-        node_num:int,
+        #ec2_instance_type: str,
+        #master_user: str,
+        #password:str,
+        #node_num:int,
         **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
+        rs_instance_type = core.CfnParameter(self, "rsInstanceType", type="String",default="ra3.xlplus",allowed_values =["dc2.large","dc2.8xlarge","ra3.xlplus","ra3.4xlarge","ra3.16xlarge"],description="Redshift instance type")
+        rs_node_count = core.CfnParameter(self, "rsSize", type="Number",default=2,description="Number of Redshift nodes")
+        rs_username = core.CfnParameter(self, "username", type="String",default="admin",description="Redshift super username")
+        rs_password = core.CfnParameter(self, "password", type="String",default="Admin1234",no_echo=True,description="Redshift superuser password")
 
         self._rs_cluster_role = iam.Role(
             self, "redshiftClusterRole",
@@ -49,19 +66,19 @@ class RedshiftStack(core.Stack):
         self.redshift_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(5439), 'Public login access')
 
 
-        if node_num==1:
+        if rs_node_count.value==1:
             cluster_type='single-node'
             self.demo_cluster = redshift.CfnCluster(self,
                 "redshiftDemoCluster",
                 cluster_type=cluster_type,
-                cluster_identifier = "redshift-stack",
+                cluster_identifier = "redshift-benchmark",
                 db_name="dev",
-                master_username = master_user,
+                master_username = rs_username.value_as_string,
                 port=5439,
                 publicly_accessible=True,
-                master_user_password=password,
+                master_user_password=rs_password.value_as_string,
                 iam_roles=[self._rs_cluster_role.role_arn],
-                node_type=f"{ec2_instance_type}",
+                node_type=f"{rs_instance_type.value_as_string}",
                 cluster_subnet_group_name=demo_cluster_subnet_group.ref,
                 vpc_security_group_ids=[self.redshift_sg.security_group_id]
             )
@@ -70,18 +87,18 @@ class RedshiftStack(core.Stack):
             self.demo_cluster = redshift.CfnCluster(self,
                 "redshiftDemoCluster",
                 cluster_type=cluster_type,
-                cluster_identifier = "redshift-stack",
+                cluster_identifier = "redshift-benchmark",
                 db_name="dev",
-                master_username = master_user,
-                number_of_nodes = node_num,
+                master_username = rs_username.value_as_string,
                 port=5439,
                 publicly_accessible=True,
-                master_user_password=password,
+                master_user_password=rs_password.value_as_string,
                 iam_roles=[self._rs_cluster_role.role_arn],
-                node_type=f"{ec2_instance_type}",
+                node_type=f"{rs_instance_type.value_as_string}",
                 cluster_subnet_group_name=demo_cluster_subnet_group.ref,
+                number_of_nodes = rs_node_count.value_as_number,
                 vpc_security_group_ids=[self.redshift_sg.security_group_id]
-        )
+            )
 
         ###########################################
         ################# OUTPUTS #################

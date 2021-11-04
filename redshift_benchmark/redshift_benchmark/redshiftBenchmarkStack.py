@@ -1,3 +1,20 @@
+"""
+   Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ 
+   Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance
+   with the License. A copy of the License is located at
+ 
+       http://www.apache.org/licenses/LICENSE-2.0
+ 
+   or in the 'license' file accompanying this file. This file is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES
+   OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
+   and limitations under the License.
+ """
+# This is the CDK stack to create a Glue workflow performing Redshift benchmark tasks
+# Author : Liulu He
+# Version: 1.0
+
+
 from aws_cdk import (
     aws_glue as glue,
     aws_iam as iam,
@@ -15,14 +32,18 @@ class RedshiftBenchmarkStack(core.Stack):
         ,port:int
         #,cluster_id:str
         ,s3_bucket:str
-        ,tpcds_root_path:str # root path for tpcds for example s3://redshift-downloads/TPC-DS/2.13/3TB/
+        #,tpcds_root_path:str # root path for tpcds for example s3://redshift-downloads/TPC-DS/2.13/3TB/
         ,rs_role_arn:str
-        ,num_runs:int
-        ,num_files:int
-        ,parallel_level:int
+        #,num_runs:int
+        #,num_files:int
+        #,parallel_level:int
         ,**kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
+        tpcds_data_path = core.CfnParameter(self, "tpcdsDataPath", type="String",default="s3://redshift-downloads/TPC-DS/2.13/3TB/",description="S3 path root of TPC-DS dataset")
+        parallel_level = core.CfnParameter(self, "parallel", type="Number",default=10,description="Number of concurrent queries submitted at the same time")
+        num_runs = core.CfnParameter(self, "numRuns", type="Number",default=2,description="Total runs of the test")
+        num_files = core.CfnParameter(self, "numFiles", type="Number",default=99,description="Total number of files under tpcds_queries directory")
         # create role for Glue jobs, in prod this could be a bring in value or create by initiation
         policy_statement = iam.PolicyStatement(
                 actions=["logs:*","s3:*","ec2:*","iam:*","cloudwatch:*","dynamodb:*","glue:*","redshift:*","redshift-data:*"]
@@ -44,14 +65,14 @@ class RedshiftBenchmarkStack(core.Stack):
         self.password=password
         self.host=host
         self.port=port
-        self.num_runs=num_runs
-        self.parallel_level=parallel_level
-        self.num_files=num_files
+        self.num_runs=num_runs.value_as_number
+        self.parallel_level=parallel_level.value_as_number
+        self.num_files=num_files.value_as_number
         
         ############################### Create Glue jobs#############################################
         ddl_task = self.rs_sql_task("tpcds-benchmark-create-tables", "01-create-tables.sql")
         load_task = self.rs_sql_task("tpcds-benchmark-load-tables","02-load-tables.sql"
-            ,parameters={'tpcds_root_path':tpcds_root_path,'role_arn':rs_role_arn})
+            ,parameters={'tpcds_root_path':tpcds_data_path.value_as_string,'role_arn':rs_role_arn})
         
 
         sequential_query_task = self.run_benchmark_query("tpcds-benchmark-sequential-report","sequential")
