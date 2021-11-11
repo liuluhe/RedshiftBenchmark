@@ -1,10 +1,25 @@
 #!/usr/bin/python
+# This is the Glue python-shell script to perform benchmark test for Redshift: sequential test and concurrent test
+# Author : Liulu He
+# Version: 1.0
 # -*- coding: UTF-8 -*-
+
+"""
+   Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ 
+   Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance
+   with the License. A copy of the License is located at
+ 
+       http://www.apache.org/licenses/LICENSE-2.0
+ 
+   or in the 'license' file accompanying this file. This file is distributed on an 'AS IS' BASIS, WITHOUT WARRANTIES
+   OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions
+   and limitations under the License.
+ """
 
 import pandas as pd
 import datetime
 import os, threading
-from dbutils.pooled_db import PooledDB
 import random, time
 from queue import Queue
 import logging
@@ -12,7 +27,13 @@ import threading
 import sys, getopt
 import boto3
 from awsglue.utils import getResolvedOptions
+import subprocess
+
+# Install required packages
+subprocess.run(["pip3 install psycopg2 -t /tmp/"], shell=True)
+subprocess.run(["pip3 install DBUtils -t /tmp/"], shell=True)
 import psycopg2
+from dbutils.pooled_db import PooledDB
 
 class RS_Benchmark_Operator(object):
     def __init__(self,host,user,password,sql_file_root,port='5439',dbname='dev',num_sql_files=10, result_cache='off',num_runs=1,parallel_level=10):
